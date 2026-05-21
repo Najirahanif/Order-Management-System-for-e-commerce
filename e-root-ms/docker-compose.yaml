@@ -1,102 +1,116 @@
+version: "3.9"
+
 services:
-
-  e-root-ms:
-    build:
-      context: ../e-root-ms
-
-    container_name: e-root-ms
-
-    ports:
-      - "5000:5000"
-
-    volumes:
-      - ../e-root-ms:/app
-      - /app/node_modules
-
-    command: npm run dev
-
-    depends_on:
-      - kafka
-      - redis
-      - mongodb
-
-  kafka:
+  kafka-1:
     image: apache/kafka:latest
-
-    container_name: kafka
-
+    container_name: kafka-1
     ports:
-      - "9092:9092"
-
+      - "19092:19092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_KRAFT_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+      KAFKA_LISTENERS: "INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-1:9092,EXTERNAL://localhost:19092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_LOG_DIRS: "/opt/kafka/data"
+    volumes:
+      - kafka1-data:/tmp/kraft-combined-logs
 
-      # internal + external listeners
-      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://kafka:29093
+  kafka-2:
+    image: apache/kafka:latest
+    container_name: kafka-2
+    ports:
+      - "19093:19093"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_KRAFT_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+      KAFKA_LISTENERS: "INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19093,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-2:9092,EXTERNAL://localhost:19093"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_LOG_DIRS: "/opt/kafka/data"
+    volumes:
+      - kafka2-data:/tmp/kraft-combined-logs
 
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
-
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  kafka-3:
+    image: apache/kafka:latest
+    container_name: kafka-3
+    ports:
+      - "19094:19094"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_KRAFT_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+      KAFKA_LISTENERS: "INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19094,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-3:9092,EXTERNAL://localhost:19094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_LOG_DIRS: "/opt/kafka/data"
+    volumes:
+      - kafka3-data:/tmp/kraft-combined-logs
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
-
     container_name: kafka-ui
-
     ports:
       - "8080:8080"
-
     environment:
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: default
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-1:8083
     depends_on:
-      - kafka
+      - kafka-1
+      - kafka-2
+      - kafka-3
 
   redis:
     image: redis:latest
-
     container_name: redis
-
     ports:
       - "6379:6379"
 
   redis-insight:
     image: redis/redisinsight:latest
-
     container_name: redis-insight
-
     ports:
       - "5540:5540"
-
     depends_on:
       - redis
 
   mongodb:
     image: mongo:latest
-
     container_name: mongodb
-
     ports:
       - "27017:27017"
-
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-
     volumes:
       - mongo-data:/data/db
 
 volumes:
+  kafka1-data:
+  kafka2-data:
+  kafka3-data:
   mongo-data:
+
+networks:
+  default:
+    name: kafka-net
+    driver: bridge

@@ -3,40 +3,70 @@ import { kafka } from "./kafkaProducer";
 import { createPaymentForOrder } from "../../services/payment.service";
 import { createTopicIfNotExists, topics } from "./topics";
 
-export const startConsumer = async (): Promise<void> => {
-    const consumer: Consumer = kafka.consumer({
+export const createConsumer = async (id: number): Promise<Consumer> => {
+    const consumer = kafka.consumer({
         groupId: "payment-service-group",
     });
 
     await consumer.connect();
 
-    // 1. Create topics if not exist (bootstrap step)
     for (const topic of topics) {
         await createTopicIfNotExists(kafka, topic);
         await consumer.subscribe({ topic, fromBeginning: false });
     }
 
-    // 2. Start consuming
     await consumer.run({
-        eachMessage: async ({ topic, partition, message }) => {
-            try {
-                const raw = message.value?.toString();
-                const data = raw ? JSON.parse(raw) : null;
+    eachMessage: async ({ topic, partition, message }) => {
+        try {
+            const rawMessage = message.value?.toString();
 
-                console.log("================================");
-                console.log("TOPIC:", topic);
-                console.log("PARTITION:", partition);
-                console.log("RAW KAFKA MESSAGE:", JSON.stringify(data, null, 2));
-                console.log("================================");
-
-                if (!data) return;
-
-                await createPaymentForOrder(data);
-            } catch (err) {
-                console.error("Consumer error:", err);
+            if (!rawMessage) {
+                console.log(`Consumer-${id} EMPTY MESSAGE`);
+                return;
             }
-        },
-    });
 
-    console.log("Kafka Consumer started");
+            const data = JSON.parse(rawMessage);
+
+            console.log(`
+========================================
+Consumer ID : Consumer-${id}
+Topic       : ${topic}
+Partition   : ${partition}
+Offset      : ${message.offset}
+Key         : ${message.key?.toString() || "NO_KEY"}
+Timestamp   : ${message.timestamp}
+
+Message Data:
+${JSON.stringify(data, null, 2)}
+========================================
+            `);
+
+            await createPaymentForOrder(data);
+
+            console.log(
+                `✅ Consumer-${id} processed offset ${message.offset} from partition ${partition}`
+            );
+
+        } catch (err) {
+            console.error(`
+❌ Consumer-${id} ERROR
+Topic      : ${topic}
+Partition  : ${partition}
+Offset     : ${message.offset}
+
+`, err);
+        }
+    },
+});
+    return consumer;
+};
+
+export const startConsumers = async (): Promise<void> => {
+    await Promise.all([
+        createConsumer(1),
+        createConsumer(2),
+        createConsumer(3),
+    ]);
+
+    console.log("3 Kafka Consumers started");
 };

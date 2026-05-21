@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db/db";
-import { startConsumer } from "./config/kafka/kafkaConsumer";
+import { startConsumers } from "./config/kafka/kafkaConsumer";
 
 dotenv.config();
 
@@ -19,7 +19,7 @@ const start = async () => {
     await connectDB();
 
     // 2. Kafka consumer
-    await startConsumer();
+    await startConsumers();
 
     // 3. Start server
     await app.listen({ port, host: "0.0.0.0" });

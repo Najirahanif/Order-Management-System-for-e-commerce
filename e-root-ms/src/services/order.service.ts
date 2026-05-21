@@ -20,7 +20,7 @@ export const createOrderService = async (data: CreateOrderDTO) => {
     status: "PENDING",
   });
 
-  await sendKafkaMessage("order.created", {
+  await sendKafkaMessage("orderr.created", {
     eventType: "ORDER_CREATED",
     orderId: order._id.toString(),
     userId: data.userId,

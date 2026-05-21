@@ -41,7 +41,7 @@ export const createPaymentForOrder = async (order: any) => {
                 paymentId: payment._id.toString(),
             },
         });
-        console.log("intentintent", intent);
+        // console.log("intentintent", intent);
 
         // ✅ 4. Update DB after success
         payment.stripePaymentIntentId = intent.id;
