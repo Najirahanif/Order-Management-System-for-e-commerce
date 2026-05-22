@@ -1,6 +1,6 @@
 "use client";
 
-import CreateOrder from "./CreateOrder";
+import CreateOrder from "../../components/orders/CreateOrder";
 
 export default function OrderProduct() {
   return (
