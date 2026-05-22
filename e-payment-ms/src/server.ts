@@ -1,34 +1,57 @@
 import Fastify from "fastify";
 import dotenv from "dotenv";
+
 import { connectDB } from "./config/db/db";
 import { startConsumers } from "./config/kafka/kafkaConsumer";
+import { initSocket } from "./config/socket/socket";
 
 dotenv.config();
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+    logger: true,
+});
 
 app.get("/", async () => {
-  return { service: "e-payment-ms", status: "running" };
+
+    return {
+        service: "e-payment-ms",
+        status: "running",
+    };
 });
 
 const start = async () => {
-  try {
-    const port = Number(process.env.PORT || 3200);
 
-    // 1. DB first
-    await connectDB();
+    try {
 
-    // 2. Kafka consumer
-    await startConsumers();
+        const port = Number(
+            process.env.PORT || 3200
+        );
 
-    // 3. Start server
-    await app.listen({ port, host: "0.0.0.0" });
+        // ✅ DB
+        await connectDB();
 
-    console.log(`Payment service running on ${port}`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
+        // ✅ Start Fastify server
+        await app.listen({
+            port,
+            host: "0.0.0.0",
+        });
+
+        // ✅ Attach Socket.IO
+        initSocket(app.server);
+
+        // ✅ Start Kafka consumers
+        await startConsumers();
+
+        console.log(
+            `Payment service running on ${port}`
+        );
+
+    } catch (err) {
+
+        app.log.error(err);
+
+        process.exit(1);
+    }
 };
 
 start();

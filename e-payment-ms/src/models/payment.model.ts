@@ -12,6 +12,7 @@ export interface IPayment extends Document {
   amount: number;
   currency: string;
   status: PaymentStatus;
+  clientSecret?: string;
 
   stripePaymentIntentId?: string;
 
@@ -21,7 +22,12 @@ export interface IPayment extends Document {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    orderId: { type: String, required: true, index: true },
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     userId: { type: String, required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: "inr" },
@@ -30,6 +36,9 @@ const PaymentSchema = new Schema<IPayment>(
       type: String,
       enum: ["PENDING", "INITIATED", "SUCCESS", "FAILED"],
       default: "PENDING",
+    },
+    clientSecret: {
+      type: String,
     },
 
     stripePaymentIntentId: { type: String },

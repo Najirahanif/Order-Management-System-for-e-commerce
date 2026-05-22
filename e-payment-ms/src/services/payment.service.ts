@@ -1,3 +1,4 @@
+import { getIO } from "../config/socket/socket";
 import { PaymentModel } from "../models/payment.model";
 import { stripe } from "./stripe.services";
 
@@ -16,8 +17,28 @@ export const createPaymentForOrder = async (order: any) => {
 
     // 🔒 1. IDENTITY CHECK (idempotency guard)
     const existing = await PaymentModel.findOne({ orderId });
+    console.log('existing: ', existing);
     if (existing) {
-        console.log("Payment already exists for order:", orderId);
+
+        console.log(
+            "Payment already exists:",
+            orderId
+        );
+
+        // 🔥 replay socket event
+        const io = getIO();
+
+        io.to(orderId).emit(
+            "payment-created",
+            {
+                orderId,
+                paymentId: existing._id,
+
+                clientSecret:
+                    existing.clientSecret,
+            }
+        );
+
         return existing;
     }
 
@@ -41,15 +62,41 @@ export const createPaymentForOrder = async (order: any) => {
                 paymentId: payment._id.toString(),
             },
         });
-        // console.log("intentintent", intent);
+        console.log("intentintent", intent);
 
         // ✅ 4. Update DB after success
         payment.stripePaymentIntentId = intent.id;
         // ✅ correct
-        payment.status = "PENDING";
+        payment.status = "INITIATED";
+        payment.clientSecret =
+            intent.client_secret || undefined;
         await payment.save();
 
-        return intent;
+        // 📡 SOCKET EVENT
+        const io = getIO();
+
+        io.to(orderId).emit(
+            "payment-created",
+            {
+                orderId,
+
+                paymentId: payment._id,
+
+                clientSecret:
+                    intent.client_secret,
+            }
+        );
+
+        console.log(
+            `📡 payment-created emitted for ${orderId}`
+        );
+
+        return {
+            orderId,
+            paymentId: payment._id,
+            clientSecret: intent.client_secret,
+            stripePaymentIntentId: intent.id,
+        };
     } catch (err) {
         // ❌ 5. rollback state (important)
         payment.status = "FAILED";
