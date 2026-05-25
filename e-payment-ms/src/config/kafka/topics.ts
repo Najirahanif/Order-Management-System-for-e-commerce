@@ -17,7 +17,7 @@ export const createTopicIfNotExists = async (kafka: Kafka, topic: string) => {
                 topics: [
                     {
                         topic,
-                        numPartitions: 6,
+                        numPartitions: 1,
                         replicationFactor: 1,
                     },
                 ],

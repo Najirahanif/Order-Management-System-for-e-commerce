@@ -3,8 +3,16 @@ import { Kafka, Producer } from "kafkajs";
 export const kafka = new Kafka({
   clientId: "order-service",
   brokers: [
-  "localhost:19092",
-]
+    "192.168.1.23:9092",
+
+  ],
+  // Add SASL authentication
+  ssl: false, // Set to true if using SASL_SSL
+  sasl: {
+    mechanism: 'plain', // or 'scram-sha-256', 'scram-sha-512'
+    username: 'najira',  // Replace with your actual username
+    password: 'naji12'   // Replace with your actual password
+  },
 });
 
 
