@@ -2,11 +2,21 @@ import { Kafka, Producer } from "kafkajs";
 
 const kafka = new Kafka({
   clientId: "order-service",
- brokers: [
-  "localhost:19092",
-  "localhost:19093",
-  "localhost:19094"
-]
+  brokers: [
+    "192.168.1.23:9092",
+  ], // connect using selected ip
+  // brokers: [
+  //   "localhost:19092",
+  //   "localhost:19093",
+  //   "localhost:19094"
+  // ],   // for comnnecting wuth the local using docker kafka 
+  // Add SASL authentication
+  ssl: false, // Set to true if using SASL_SSL
+  sasl: {
+    mechanism: 'plain', // or 'scram-sha-256', 'scram-sha-512'
+    username: 'najira',  // Replace with your actual username
+    password: 'naji12'   // Replace with your actual password
+  },
 });
 
 const producer: Producer = kafka.producer();
