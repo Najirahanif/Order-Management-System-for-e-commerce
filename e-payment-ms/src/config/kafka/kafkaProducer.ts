@@ -1,20 +1,34 @@
 import { Kafka, Producer } from "kafkajs";
 
+// to connect with the local kafka and uses docker-compose.yaml form the e-root-ms without sasl configuration
 export const kafka = new Kafka({
   clientId: "order-service",
-  brokers: [
-    "192.168.1.23:9092",
+  //for ip whitelisting
+  // brokers: [
+  //   "192.168.1.23:9092",
 
+  // ],
+  brokers: [
+    "localhost:19092",
   ],
-  // Add SASL authentication
-  ssl: false, // Set to true if using SASL_SSL
-  sasl: {
-    mechanism: 'plain', // or 'scram-sha-256', 'scram-sha-512'
-    username: 'najira',  // Replace with your actual username
-    password: 'naji12'   // Replace with your actual password
-  },
 });
 
+// with application ==> server.properties file configuration for
+//  sasl authetication and ip whitelisting
+// export const kafka = new Kafka({
+//   clientId: "order-service",
+//   brokers: [
+//     "192.168.1.23:9092",
+
+//   ],
+//   // Add SASL authentication
+//   ssl: false, // Set to true if using SASL_SSL
+//   sasl: {
+//     mechanism: 'plain', // or 'scram-sha-256', 'scram-sha-512'
+//     username: 'najira',  // Replace with your actual username
+//     password: 'naji12'   // Replace with your actual password
+//   },
+// });
 
 const producer: Producer = kafka.producer();
 
