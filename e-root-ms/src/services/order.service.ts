@@ -1,5 +1,6 @@
 import { sendKafkaMessage } from "../config/kafka/kafkaProducer";
 import { Order } from "../model/order.model";
+import { redisConnect } from "../config/redis/redis";
 
 interface CreateOrderDTO {
   userId: string;
@@ -11,22 +12,43 @@ interface CreateOrderDTO {
   }[];
 }
 
+const redis = redisConnect();
+
 /**
  * Create Order Service
  */
 export const createOrderService = async (data: CreateOrderDTO) => {
+  // 1. Create order in MongoDB
   const order = await Order.create({
     ...data,
     status: "PENDING",
   });
 
-  await sendKafkaMessage("orderr.created", {
+  // 2. Prepare the message
+  const message = {
     eventType: "ORDER_CREATED",
     orderId: order._id.toString(),
     userId: data.userId,
     products: data.products,
     status: "PENDING",
-  });
+    createdAt: new Date().toISOString()
+  };
+
+  // 3. Send to Kafka
+  await sendKafkaMessage("orderr.created", message);
+
+  // 4. Store the SAME message in Redis
+  const redisKey = `order:${order._id}`;
+
+  await redis.hset(
+    redisKey,
+    "data",
+    JSON.stringify(message)
+  );
+
+  await redis.expire(redisKey, 20);
+
+  console.log(`✅ Order ${order._id} stored in Redis and Kafka`);
 
   return order;
 };

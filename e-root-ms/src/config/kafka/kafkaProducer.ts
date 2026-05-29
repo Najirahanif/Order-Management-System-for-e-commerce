@@ -1,23 +1,31 @@
 import { Kafka, Producer } from "kafkajs";
 
+//docker compose.yaml file for multiple nodes running
 const kafka = new Kafka({
   clientId: "order-service",
   brokers: [
-    "192.168.1.23:9092",
-  ], // connect using selected ip
-  // brokers: [
-  //   "localhost:19092",
-  //   "localhost:19093",
-  //   "localhost:19094"
-  // ],   // for comnnecting wuth the local using docker kafka 
-  // Add SASL authentication
-  ssl: false, // Set to true if using SASL_SSL
-  sasl: {
-    mechanism: 'plain', // or 'scram-sha-256', 'scram-sha-512'
-    username: 'najira',  // Replace with your actual username
-    password: 'naji12'   // Replace with your actual password
-  },
+    "localhost:19092",
+    "localhost:19093",
+    "localhost:19094"
+  ],
 });
+
+// with application ==> server.properties file configuration for
+//  sasl authetication and ip whitelisting
+
+// const kafka = new Kafka({
+//   clientId: "order-service",
+//   brokers: [
+//     "192.168.1.23:9092",
+//   ], 
+//   // Add SASL authentication
+//   ssl: false, // Set to true if using SASL_SSL
+//   sasl: {
+//     mechanism: 'plain',
+//     username: process.env.SASL_USERNAME,
+//     password: process.env.SASL_PASSWORD 
+//   },
+// });
 
 const producer: Producer = kafka.producer();
 
